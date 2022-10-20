@@ -6,7 +6,9 @@ const LINKING_ERROR =
   '- You rebuilt the app after installing the package\n' +
   '- You are not using Expo managed workflow\n';
 
-const SafeAreaIme = NativeModules.SafeAreaIme  ? NativeModules.SafeAreaIme  : new Proxy(
+const SafeAreaIme = NativeModules.SafeAreaIme
+  ? NativeModules.SafeAreaIme
+  : new Proxy(
       {},
       {
         get() {
@@ -15,6 +17,18 @@ const SafeAreaIme = NativeModules.SafeAreaIme  ? NativeModules.SafeAreaIme  : ne
       }
     );
 
-export function multiply(a: number, b: number): Promise<number> {
-  return SafeAreaIme.multiply(a, b);
-}
+SafeAreaIme.install();
+
+export const safeArea = {
+  get safeArea(): { top: number; right: number; bottom: number; left: number } {
+    return global.__safeAreaIme.safeArea();
+  },
+
+  listenKeyboard(callback: (params: { type: string; height: number }) => void) {
+    global.__safeAreaIme.listenKeyboard(callback);
+  },
+
+  stopListenKeyboard() {
+    global.__safeAreaIme.stopListenKeyboard();
+  },
+};
