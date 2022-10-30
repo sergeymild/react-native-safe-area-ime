@@ -8,6 +8,8 @@
 #include <utility>
 #include "iostream"
 
+namespace safeArea {
+
 using namespace facebook;
 using namespace facebook::jni;
 using namespace facebook::jsi;
@@ -15,12 +17,12 @@ using namespace facebook::jsi;
 JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *) {
     return facebook::jni::initialize(vm, [] {
         SafeArea::registerNatives();
+        KeyboardListenerCallback::registerNatives();
     });
 };
 
 
 using TSelf = local_ref<HybridClass<SafeArea>::jhybriddata>;
-
 
 // JNI binding
 void SafeArea::registerNatives() {
@@ -58,10 +60,12 @@ void SafeArea::installJSIBindings() {
 
     auto listenKeyboard = JSI_HOST_FUNCTION("listenKeyboard", 1) {
          if (callbacks_["listenKeyboard"]) return jsi::Value::undefined();
-         NSLog(@"🥸 listenKeyboard");
+         __android_log_print(ANDROID_LOG_ERROR, "SafeArea", "🥸 listenKeyboard");
 
          auto callback = args[0].asObject(runtime).asFunction(runtime);
          callbacks_["listenKeyboard"] = std::make_shared<jsi::Function>(std::move(callback));
+
+         javaPart_->getClass()->getMethod<void()>()
 
 
          return jsi::Value::undefined();
@@ -69,8 +73,8 @@ void SafeArea::installJSIBindings() {
 
     auto stopListenKeyboard = JSI_HOST_FUNCTION("stopListenKeyboard", 0) {
          if (!callbacks_["listenKeyboard"]) return jsi::Value::undefined();
-         NSLog(@"🥸 stopListenKeyboard");
          callbacks_.erase("listenKeyboard");
+         __android_log_print(ANDROID_LOG_ERROR, "SafeArea", "🥸 stopListenKeyboard");
 
          return jsi::Value::undefined();
      });
@@ -105,4 +109,6 @@ TSelf SafeArea::initHybrid(
             (jsi::Runtime *) jsContext,
             jsCallInvoker
     );
+}
+
 }
