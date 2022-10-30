@@ -1,7 +1,9 @@
 import * as React from 'react';
 
 import {
+  Dimensions,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -9,28 +11,59 @@ import {
   View,
 } from 'react-native';
 import { safeArea } from 'react-native-safe-area-ime';
+import { useState } from 'react';
+
+let fitted = true;
 
 export default function App() {
-  const [result, setResult] = React.useState<number | undefined>();
-
-  React.useEffect(() => {
-    console.log('[App.]', safeArea.safeArea);
-  }, []);
+  const [b, sB] = useState(0);
 
   return (
     <ScrollView
       keyboardDismissMode={'interactive'}
       style={{ flex: 1 }}
-      contentContainerStyle={{ flex: 1 }}
+      contentContainerStyle={{ flex: 1, backgroundColor: 'red' }}
     >
       <View style={styles.container}>
         <TouchableOpacity
-          onPress={() => console.log('[🥸App.]', safeArea.safeArea)}
+          style={{ height: 56 }}
+          onPress={() => {
+            const window = Dimensions.get('window');
+            const screen = Dimensions.get('screen');
+            console.log(
+              JSON.stringify(
+                {
+                  native: safeArea.safeArea,
+                  window,
+                  screen,
+                  wP: { h: window.height - StatusBar.currentHeight! },
+                  sP: { h: screen.height - StatusBar.currentHeight! },
+                },
+                undefined,
+                2
+              )
+            );
+            sB(safeArea.safeArea.height - 10 - safeArea.safeArea.bottom);
+          }}
         >
           <Text>Get</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={{ height: 56 }}
+          onPress={() => {
+            fitted = !fitted;
+            StatusBar.setBackgroundColor(
+              fitted ? 'yellow' : 'transparent',
+              false
+            );
+            safeArea.toggleFitsSystemWindows(fitted);
+          }}
+        >
+          <Text>Nav color</Text>
+        </TouchableOpacity>
 
         <TouchableOpacity
+          style={{ height: 56 }}
           onPress={() => {
             safeArea.listenKeyboard((params) => {
               console.log('[🥸App.keyboardWillShow]', params);
@@ -41,6 +74,7 @@ export default function App() {
         </TouchableOpacity>
 
         <TouchableOpacity
+          style={{ height: 56 }}
           onPress={() => {
             safeArea.stopListenKeyboard();
           }}
@@ -48,6 +82,15 @@ export default function App() {
           <Text>Stop</Text>
         </TouchableOpacity>
         <TextInput placeholder={'tap'} />
+        <View
+          style={{
+            height: 10,
+            backgroundColor: 'yellow',
+            width: 100,
+            position: 'absolute',
+            top: b,
+          }}
+        />
       </View>
     </ScrollView>
   );

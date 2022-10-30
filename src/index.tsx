@@ -19,8 +19,28 @@ const SafeAreaIme = NativeModules.SafeAreaIme
 
 SafeAreaIme.install();
 
+declare global {
+  var __safeAreaIme: {
+    safeArea(): SafeAreaModel;
+    listenKeyboard(
+      callback: (params: { type: string; height: number }) => void
+    ): void;
+    stopListenKeyboard(): void;
+    toggleFitsSystemWindows(isDisabled: boolean): void;
+  };
+}
+
+export interface SafeAreaModel {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+  width: number;
+  height: number;
+}
+
 export const safeArea = {
-  get safeArea(): { top: number; right: number; bottom: number; left: number } {
+  get safeArea(): SafeAreaModel {
     return global.__safeAreaIme.safeArea();
   },
 
@@ -30,5 +50,10 @@ export const safeArea = {
 
   stopListenKeyboard() {
     global.__safeAreaIme.stopListenKeyboard();
+  },
+
+  toggleFitsSystemWindows(isDisabled: boolean) {
+    if (Platform.OS !== 'android') return;
+    global.__safeAreaIme.toggleFitsSystemWindows(isDisabled);
   },
 };

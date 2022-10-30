@@ -22,6 +22,7 @@ std::shared_ptr<facebook::react::CallInvoker> jsCallInvoker_;
 std::map<std::string, std::shared_ptr<facebook::jsi::Function>> callbacks_;
 
 UIEdgeInsets safeAreaInsets = UIEdgeInsetsZero;
+CGSize screenSize = CGSizeZero;
 
 + (BOOL)requiresMainQueueSetup
 {
@@ -44,15 +45,17 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install) {
 -(void)installJSIBindings {
     auto safeArea = JSI_HOST_FUNCTION("safeArea", 0) {
         auto safeArea = jsi::Object(runtime);
-        
-        
+
         dispatch_sync(dispatch_get_main_queue(), ^{
             safeAreaInsets = UIApplication.sharedApplication.keyWindow.safeAreaInsets;
+            screenSize = UIScreen.mainScreen.bounds.size;
         });
         safeArea.setProperty(runtime, "top", safeAreaInsets.top);
         safeArea.setProperty(runtime, "right", safeAreaInsets.right);
         safeArea.setProperty(runtime, "bottom", safeAreaInsets.bottom);
         safeArea.setProperty(runtime, "left", safeAreaInsets.left);
+        safeArea.setProperty(runtime, "width", screenSize.width);
+        safeArea.setProperty(runtime, "height", screenSize.height);
         
         return safeArea;
     });
