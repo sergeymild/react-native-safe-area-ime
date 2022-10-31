@@ -171,7 +171,6 @@ repositories {
 def kotlin_version = getExtOrDefault('kotlinVersion')
 dependencies {
   implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-  implementation 'androidx.core:core-ktx:+'
   // noinspection GradleDynamicVersion
   implementation 'com.facebook.react:react-native:+'
   //noinspection GradleDynamicVersion
