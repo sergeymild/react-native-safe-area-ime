@@ -8,21 +8,22 @@
 #include <utility>
 #include "iostream"
 
+JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *) {
+    return facebook::jni::initialize(vm, [] {
+        safeArea::SafeArea::registerNatives();
+        safeArea::KeyboardListenerCallback::registerNatives();
+    });
+};
+
 namespace safeArea {
 
 using namespace facebook;
 using namespace facebook::jni;
 using namespace facebook::jsi;
 
-JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *) {
-    return facebook::jni::initialize(vm, [] {
-        SafeArea::registerNatives();
-        KeyboardListenerCallback::registerNatives();
-    });
-};
-
 
 using TSelf = local_ref<HybridClass<SafeArea>::jhybriddata>;
+using Callbacks = std::map<std::string, std::shared_ptr<facebook::jsi::Function>>;
 
 // JNI binding
 void SafeArea::registerNatives() {
@@ -65,8 +66,36 @@ void SafeArea::installJSIBindings() {
          auto callback = args[0].asObject(runtime).asFunction(runtime);
          callbacks_["listenKeyboard"] = std::make_shared<jsi::Function>(std::move(callback));
 
-         javaPart_->getClass()->getMethod<void()>()
+         __android_log_print(ANDROID_LOG_ERROR, "SafeArea", "🥸 listenKeyboard.method");
 
+
+         std::function<void(std::string, double)> wrapperOnChange =
+                 [j = jsCallInvoker_, cc = &callbacks_, r = runtime_](const std::string& type, double height) {
+             __android_log_print(ANDROID_LOG_ERROR, "SafeArea", "🥸 listenKeyboardIII %s %f", type.c_str(), height);
+
+
+             j->invokeAsync([&cc, r, height, type]() {
+                 std::shared_ptr<jsi::Function> c = (*cc)["listenKeyboard"];
+                 if (!c) return;
+
+                 jsi::Object object = jsi::Object(*r);
+                 object.setProperty(*r, "type", jsi::String::createFromUtf8(*r, type));
+                 object.setProperty(*r, "height", jsi::Value(height));
+
+                 c->call(*r, std::move(object));
+             });
+         };
+
+         __android_log_print(ANDROID_LOG_ERROR, "SafeArea", "🥸 listenKeyboard.wrapped");
+
+         auto obj = KeyboardListenerCallback::newObjectCxxArgs(std::move(wrapperOnChange));
+         __android_log_print(ANDROID_LOG_ERROR, "SafeArea", "🥸 listenKeyboard.obj.get");
+
+         auto method =
+                 javaPart_->getClass()->getMethod<void(KeyboardListenerCallback::javaobject)>("startListenKeyboard");
+         method(javaPart_.get(), obj.get());
+
+         __android_log_print(ANDROID_LOG_ERROR, "SafeArea", "🥸 listenKeyboard.called");
 
          return jsi::Value::undefined();
      });
@@ -75,6 +104,8 @@ void SafeArea::installJSIBindings() {
          if (!callbacks_["listenKeyboard"]) return jsi::Value::undefined();
          callbacks_.erase("listenKeyboard");
          __android_log_print(ANDROID_LOG_ERROR, "SafeArea", "🥸 stopListenKeyboard");
+         auto method =javaPart_->getClass()->getMethod<void()>("stopListenKeyboard");
+         method(javaPart_.get());
 
          return jsi::Value::undefined();
      });

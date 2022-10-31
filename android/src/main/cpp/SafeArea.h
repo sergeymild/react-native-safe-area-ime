@@ -1,6 +1,7 @@
 #include <fbjni/fbjni.h>
 #include <jsi/jsi.h>
 #include <ReactCommon/CallInvokerHolder.h>
+#include <fbjni/detail/References.h>
 #import "map"
 
 namespace safeArea {
@@ -10,9 +11,10 @@ namespace safeArea {
     class KeyboardListenerCallback : public facebook::jni::HybridClass<KeyboardListenerCallback> {
     public:
         static auto constexpr kJavaDescriptor =
-                "Lcom/reactnativesafeareaime/SafeArea$KeyboardListenerCallback;";
+                "Lcom/reactnativesafeareaime/KeyboardListenerCallback;";
 
         void onChange(std::string type, double height) {
+            __android_log_print(ANDROID_LOG_ERROR, "SafeArea", "🥸 KeyboardListenerCallback.onChange");
             callback_(type, height);
         }
 

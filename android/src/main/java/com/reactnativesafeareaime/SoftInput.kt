@@ -38,22 +38,16 @@ fun Activity.setWindowSoftInput(
     onChanged: (() -> Unit)? = null,
 ) = window.setWindowSoftInput(float, transition, editText, margin, setPadding, onChanged)
 
-/**
- * 软键盘弹出后要求指定视图[float]悬浮在软键盘之上
- * 本方法重复调用会互相覆盖, 例如Fragment调用会覆盖其Activity的调用
- *
- * Api21以上本方法使用[WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING]
- * Api21下调用无效
- *
- * @param float 需要悬浮在软键盘之上的视图
- * @param transition 当软键盘显示隐藏时需要移动的视图, 使用[View.setTranslationY]移动
- * @param editText 指定的视图存在焦点才触发软键盘监听, null则全部视图都触发
- * @param margin 悬浮视图和软键盘间距
- * @param setPadding 使用[View.setPadding]来移动[transition]视图, 让可滚动视图自动收缩, 而不是向上偏移[View.setTranslationY]
- * @param onChanged 监听软键盘是否显示
- *
- * @see getSoftInputHeight 软键盘高度
- */
+fun Activity.removeWindowSoftInput() {
+  if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return
+  window.removeWindowSoftInput()
+}
+
+fun Window.removeWindowSoftInput() {
+  if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return
+  ViewCompat.setWindowInsetsAnimationCallback(decorView, null)
+}
+
 @JvmOverloads
 fun Window.setWindowSoftInput(
     float: View? = null,
@@ -66,9 +60,9 @@ fun Window.setWindowSoftInput(
     // Api21下不需要用户体验, 直接不适配
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return
     // 部分系统不支持WindowInsets使用兼容方案处理
-    if (!decorView.isSystemInsetsAnimationSupport()) {
-        return setWindowSoftInputCompatible(float, transition, editText, margin, onChanged)
-    }
+//    if (!decorView.isSystemInsetsAnimationSupport()) {
+//        return setWindowSoftInputCompatible(float, transition, editText, margin, onChanged)
+//    }
     setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING)
     var matchEditText = false
     var hasSoftInput = false

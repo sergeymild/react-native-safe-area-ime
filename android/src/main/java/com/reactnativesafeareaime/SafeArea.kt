@@ -6,34 +6,24 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.jni.HybridData
-import com.facebook.jni.annotations.DoNotStrip
+import com.facebook.proguard.annotations.DoNotStrip
+import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.turbomodule.core.CallInvokerHolderImpl
 import com.facebook.react.uimanager.PixelUtil
 import java.lang.Exception
+import java.lang.ref.WeakReference
 import kotlin.math.abs
-
-
-@DoNotStrip
-class KeyboardListenerCallback {
-  @DoNotStrip
-  private var mHybridData: HybridData? = null
-
-  @DoNotStrip
-  constructor(mHybridData: HybridData?) {
-    this.mHybridData = mHybridData
-  }
-
-  external fun onChange(type: String, height: Double)
-}
 
 class SafeArea(var context: ReactApplicationContext) {
   @DoNotStrip
   var mHybridData: HybridData? = null
+  @Suppress("KotlinJniMissingFunction")
   external fun initHybrid(
     jsContext: Long,
     jsCallInvokerHolder: CallInvokerHolderImpl?
   ): HybridData?
 
+  @Suppress("KotlinJniMissingFunction")
   external fun installJSIBindings()
   fun install(context: ReactApplicationContext): Boolean {
     return try {
@@ -65,34 +55,51 @@ class SafeArea(var context: ReactApplicationContext) {
   @DoNotStrip
   fun safeArea(): DoubleArray {
     val currentActivity = context.currentActivity ?: return DoubleArray(6)
-    val viewById = currentActivity.findViewById<View>(R.id.content)
+    val viewById = currentActivity.findViewById<View>(android.R.id.content)
       ?: return DoubleArray(6)
     val heightPixels = Resources.getSystem().displayMetrics.heightPixels
     val systemHeight = viewById.height - heightPixels
     val rootWindowInsets = ViewCompat.getRootWindowInsets(viewById)
       ?: return DoubleArray(6)
     val top = rootWindowInsets.getInsets(WindowInsetsCompat.Type.statusBars()).top
+    val t = PixelUtil.toDIPFromPixel(top.toFloat()).toDouble()
+    val sh = PixelUtil.toDIPFromPixel(abs(systemHeight).toFloat()).toDouble()
     return doubleArrayOf(
-      top.toDouble(), 0.0,
-      PixelUtil.toDIPFromPixel(
-        if (abs(systemHeight) == top) 0f else abs(systemHeight).toFloat()
-      ).toDouble(), 0.0,
+      if (abs(systemHeight) == 0) t else 0.0,
+      0.0,
+      if (abs(systemHeight) == top) 0.0 else sh,
+      0.0,
       PixelUtil.toDIPFromPixel(viewById.width.toFloat()).toDouble(),
       PixelUtil.toDIPFromPixel(viewById.height.toFloat()).toDouble()
     )
   }
 
-  @DoNotStrip
-  fun startListenKeyboard(callback: KeyboardListenerCallback) {
+  var callback: KeyboardListenerCallback? = null
+
+  @ReactMethod
+  fun stopListenKeyboard() {
+    println("🥸 stopListenKeyboard")
+    context.currentActivity?.removeWindowSoftInput()
+    callback?.destroy()
+    callback = null
+  }
+
+  @ReactMethod
+  fun startListenKeyboard(c: KeyboardListenerCallback) {
+    this.callback = c
+    println("🥸 startListenKeyboard ${callback}")
     val currentActivity = context.currentActivity ?: return
-    var keyboardHeight = 0.0
-    currentActivity.setWindowSoftInput {
-      if (keyboardHeight == 0.0) {
-        keyboardHeight =
-          PixelUtil.toDIPFromPixel(currentActivity.getSoftInputHeight().toFloat()).toDouble()
+    currentActivity.runOnUiThread {
+      currentActivity.removeWindowSoftInput()
+      var keyboardHeight = 0.0
+      currentActivity.setWindowSoftInput {
+        if (keyboardHeight == 0.0) {
+          keyboardHeight =
+            PixelUtil.toDIPFromPixel(currentActivity.getSoftInputHeight().toFloat()).toDouble()
+        }
+        val type = if (currentActivity.hasSoftInput()) "show" else "hide"
+        callback?.onChange(type, keyboardHeight)
       }
-      val type = if (currentActivity.hasSoftInput()) "keyboardWillShow" else "keyboardWillHide"
-      callback.onChange(type, keyboardHeight)
     }
   }
 }

@@ -17,6 +17,7 @@ let fitted = true;
 
 export default function App() {
   const [b, sB] = useState(0);
+  const [t, sT] = useState(0);
 
   return (
     <ScrollView
@@ -38,12 +39,14 @@ export default function App() {
                   screen,
                   wP: { h: window.height - StatusBar.currentHeight! },
                   sP: { h: screen.height - StatusBar.currentHeight! },
+                  stb: StatusBar.currentHeight,
                 },
                 undefined,
                 2
               )
             );
             sB(safeArea.safeArea.height - 10 - safeArea.safeArea.bottom);
+            sT(safeArea.safeArea.top);
           }}
         >
           <Text>Get</Text>
@@ -89,6 +92,16 @@ export default function App() {
             width: 100,
             position: 'absolute',
             top: b,
+          }}
+        />
+
+        <View
+          style={{
+            height: 10,
+            backgroundColor: 'green',
+            width: 100,
+            position: 'absolute',
+            top: t,
           }}
         />
       </View>
