@@ -1,5 +1,5 @@
 # react-native-safe-area-ime
-L
+
 ## Installation
 
 ```sh
@@ -9,21 +9,34 @@ npm install react-native-safe-area-ime
 ## Usage
 
 ```js
-import { multiply } from "react-native-safe-area-ime";
+import { safeArea } from 'react-native-safe-area-ime';
 
 // ...
 
-const result = await multiply(3, 7);
-```
+export interface SafeAreaModel {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+  width: number;
+  height: number;
+}
 
-## Contributing
+export const safeArea = {
+  get safeArea(): SafeAreaModel {
+    return global.__safeAreaIme.safeArea();
+  },
 
-See the [contributing guide](CONTRIBUTING.md) to learn how to contribute to the repository and the development workflow.
+  listenKeyboard(callback: (params: { type: string; height: number }) => void) {
+    global.__safeAreaIme.listenKeyboard(callback);
+  },
 
-## License
+  stopListenKeyboard() {
+    global.__safeAreaIme.stopListenKeyboard();
+  },
 
-MIT
-
----
-
-Made with [create-react-native-library](https://github.com/callstack/react-native-builder-bob)
+  toggleFitsSystemWindows(isDisabled: boolean) {
+    if (Platform.OS !== 'android') return;
+    global.__safeAreaIme.toggleFitsSystemWindows(isDisabled);
+  },
+};
