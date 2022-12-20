@@ -23,7 +23,7 @@ declare global {
   var __safeAreaIme: {
     safeArea(): SafeAreaModel;
     listenKeyboard(
-      callback: (params: { type: string; height: number }) => void
+      callback: (params: { type: 'show' | 'hide'; height: number }) => void
     ): void;
     stopListenKeyboard(): void;
     toggleFitsSystemWindows(isDisabled: boolean): void;
@@ -44,7 +44,7 @@ export const layout = {
     return global.__safeAreaIme.safeArea();
   },
 
-  listenKeyboard(callback: (params: { type: string; height: number }) => void) {
+  listenKeyboard(callback: (params: { type: 'show' | 'hide'; height: number }) => void) {
     global.__safeAreaIme.listenKeyboard(callback);
   },
 
