@@ -10,7 +10,9 @@
 
 using namespace facebook;
 
-@interface SafeAreaIme : NSObject <RCTBridgeModule>
+@interface SafeAreaIme : NSObject <RCTBridgeModule> {
+    CGFloat keyboardheight;
+}
 @end
 
 
@@ -124,7 +126,6 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install) {
 }
 
 
-CGFloat keyboardheight = 0;
 - (void)keyboardDidShow: (NSNotification *) notif{
     
     NSDictionary* keyboardInfo = [notif userInfo];
