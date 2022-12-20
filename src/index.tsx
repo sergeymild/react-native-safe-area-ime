@@ -39,7 +39,7 @@ export interface SafeAreaModel {
   height: number;
 }
 
-export const safeArea = {
+export const layout = {
   get safeArea(): SafeAreaModel {
     return global.__safeAreaIme.safeArea();
   },

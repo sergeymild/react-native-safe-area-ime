@@ -72,6 +72,11 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install) {
              selector:@selector(keyboardDidShow:)
                  name:UIKeyboardWillShowNotification
                object:nil];
+
+            [[NSNotificationCenter defaultCenter] addObserver:self
+                selector:@selector(keyboardDidShow:)
+                    name:UIKeyboardWillChangeFrameNotification
+                    object:nil];
             
             [[NSNotificationCenter defaultCenter] addObserver:self
              selector:@selector(keyboardDidHide:)
@@ -95,6 +100,11 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install) {
              removeObserver:self
              name:UIKeyboardWillShowNotification
              object:nil];
+
+            [[NSNotificationCenter defaultCenter]
+             removeObserver:self
+             name:UIKeyboardWillChangeFrameNotification
+             object:nil];
             
             [[NSNotificationCenter defaultCenter]
              removeObserver:self
@@ -117,14 +127,10 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install) {
 CGFloat keyboardheight = 0;
 - (void)keyboardDidShow: (NSNotification *) notif{
     
-    if (true) {
-        NSDictionary* keyboardInfo = [notif userInfo];
-        NSValue* keyboardFrameBegin = [keyboardInfo valueForKey:UIKeyboardFrameEndUserInfoKey];
-        CGRect keyboardFrameBeginRect = [keyboardFrameBegin CGRectValue];
-        //if (keyboardheight < keyboardFrameBeginRect.size.height) {
-            keyboardheight = keyboardFrameBeginRect.size.height;
-        //}
-    }
+    NSDictionary* keyboardInfo = [notif userInfo];
+    NSValue* keyboardFrameBegin = [keyboardInfo valueForKey:UIKeyboardFrameEndUserInfoKey];
+    CGRect keyboardFrameBeginRect = [keyboardFrameBegin CGRectValue];
+    keyboardheight = keyboardFrameBeginRect.size.height;
     
     jsCallInvoker_->invokeAsync([=]() {
         std::shared_ptr<jsi::Function> c = callbacks_["listenKeyboard"];

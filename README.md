@@ -2,8 +2,9 @@
 
 ## Installation
 
+add in package.json
 ```sh
-npm install react-native-safe-area-ime
+"react-native-safe-area-ime": "sergeymild/react-native-safe-area-ime#0.3.0"
 ```
 
 ## Usage
@@ -22,7 +23,7 @@ export interface SafeAreaModel {
   height: number;
 }
 
-export const safeArea = {
+export const layout = {
   get safeArea(): SafeAreaModel {
     return global.__safeAreaIme.safeArea();
   },
