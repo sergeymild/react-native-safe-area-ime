@@ -12,19 +12,18 @@ using namespace facebook;
 
 @interface SafeAreaIme : NSObject <RCTBridgeModule> {
     CGFloat keyboardheight;
+    jsi::Runtime* runtime_;
+    std::shared_ptr<facebook::react::CallInvoker> jsCallInvoker_;
+    std::map<std::string, std::shared_ptr<facebook::jsi::Function>> callbacks_;
+
+    UIEdgeInsets safeAreaInsets;
+    CGSize screenSize;
 }
 @end
 
 
 @implementation SafeAreaIme
 RCT_EXPORT_MODULE()
-
-jsi::Runtime* runtime_;
-std::shared_ptr<facebook::react::CallInvoker> jsCallInvoker_;
-std::map<std::string, std::shared_ptr<facebook::jsi::Function>> callbacks_;
-
-UIEdgeInsets safeAreaInsets = UIEdgeInsetsZero;
-CGSize screenSize = CGSizeZero;
 
 + (BOOL)requiresMainQueueSetup
 {
@@ -41,6 +40,10 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install) {
     jsCallInvoker_ = _bridge.jsCallInvoker;
     [self installJSIBindings];
 
+    screenSize = CGSizeZero;
+    safeAreaInsets = UIEdgeInsetsZero;
+    keyboardheight = 0;
+    
     return @true;
 }
 
