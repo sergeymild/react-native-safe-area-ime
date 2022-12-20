@@ -18,6 +18,7 @@ using namespace facebook;
 
     UIEdgeInsets safeAreaInsets;
     CGSize screenSize;
+    BOOL isKeyboardPresent;
 }
 @end
 
@@ -39,11 +40,11 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install) {
     if (runtime_ == nil) return @false;
     jsCallInvoker_ = _bridge.jsCallInvoker;
     [self installJSIBindings];
-
+    
     screenSize = CGSizeZero;
     safeAreaInsets = UIEdgeInsetsZero;
-    keyboardheight = 0;
-    
+    isKeyboardPresent = false;
+
     return @true;
 }
 
@@ -73,10 +74,6 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install) {
         callbacks_["listenKeyboard"] = std::make_shared<jsi::Function>(std::move(callback));
         
         dispatch_sync(dispatch_get_main_queue(), ^{
-            [[NSNotificationCenter defaultCenter] addObserver:self
-             selector:@selector(keyboardDidShow:)
-                 name:UIKeyboardWillShowNotification
-               object:nil];
 
             [[NSNotificationCenter defaultCenter] addObserver:self
                 selector:@selector(keyboardDidShow:)
@@ -101,10 +98,6 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install) {
         
         
         dispatch_sync(dispatch_get_main_queue(), ^{
-            [[NSNotificationCenter defaultCenter]
-             removeObserver:self
-             name:UIKeyboardWillShowNotification
-             object:nil];
 
             [[NSNotificationCenter defaultCenter]
              removeObserver:self
@@ -134,6 +127,10 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install) {
     NSDictionary* keyboardInfo = [notif userInfo];
     NSValue* keyboardFrameBegin = [keyboardInfo valueForKey:UIKeyboardFrameEndUserInfoKey];
     CGRect keyboardFrameBeginRect = [keyboardFrameBegin CGRectValue];
+    if (isKeyboardPresent && keyboardheight == keyboardFrameBeginRect.size.height) {
+        return;
+    }
+    isKeyboardPresent = true;
     keyboardheight = keyboardFrameBeginRect.size.height;
     
     jsCallInvoker_->invokeAsync([=]() {
@@ -148,7 +145,7 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install) {
 }
 
 - (void)keyboardDidHide: (NSNotification *) notif{
-    
+    isKeyboardPresent = false;
     jsCallInvoker_->invokeAsync([=]() {
         std::shared_ptr<jsi::Function> c = callbacks_["listenKeyboard"];
         if (!c) return;
