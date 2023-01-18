@@ -130,6 +130,7 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install) {
     if (isKeyboardPresent && keyboardheight == keyboardFrameBeginRect.size.height) {
         return;
     }
+    if (keyboardFrameBeginRect.size.height < 100) return;
     isKeyboardPresent = true;
     keyboardheight = keyboardFrameBeginRect.size.height;
     
