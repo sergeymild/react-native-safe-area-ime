@@ -19,12 +19,25 @@ const SafeAreaIme = NativeModules.SafeAreaIme
 
 SafeAreaIme.install();
 
+export enum KeyboardState {
+  CLOSED = 'CLOSED',
+  OPENING = 'OPENING',
+  OPENED = 'OPENED',
+  CLOSING = 'CLOSED',
+}
+
+export type NativeKeyboardNotificationsListenerParams = {
+  keyboardHeight: number;
+  keyboardState: KeyboardState;
+  isKeyboardPresent: boolean
+}
+export type NativeKeyboardNotificationsListener =
+  (params: NativeKeyboardNotificationsListenerParams) => void
+
 declare global {
   var __safeAreaIme: {
     safeArea(): SafeAreaModel;
-    listenKeyboard(
-      callback: (params: { type: 'show' | 'hide'; height: number }) => void
-    ): void;
+    listenKeyboard(callback: NativeKeyboardNotificationsListener): void;
     stopListenKeyboard(): void;
     toggleFitsSystemWindows(isDisabled: boolean): void;
   };
@@ -44,7 +57,7 @@ export const layout = {
     return global.__safeAreaIme.safeArea();
   },
 
-  listenKeyboard(callback: (params: { type: 'show' | 'hide'; height: number }) => void) {
+  listenKeyboard(callback: NativeKeyboardNotificationsListener) {
     global.__safeAreaIme.listenKeyboard(callback);
   },
 
