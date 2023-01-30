@@ -10,15 +10,28 @@
 
 using namespace facebook;
 
+@interface Helpers:NSObject
+- (CGRect) getKeyboardFrame:( NSNotification* )notification;
+@end
+
+@implementation Helpers
+- (CGRect) getKeyboardFrame:( NSNotification* )notification {
+    NSDictionary* keyboardUserInfo = notification.userInfo;
+    NSValue* keyboardFrame = [keyboardUserInfo valueForKey: UIKeyboardFrameEndUserInfoKey];
+    CGRect keyboardFrameRect = keyboardFrame.CGRectValue;
+    return keyboardFrameRect;
+}
+@end
+Helpers *helpers = [[Helpers alloc]init];
+
+
 @interface SafeAreaIme : NSObject <RCTBridgeModule> {
-    CGFloat keyboardheight;
     jsi::Runtime* runtime_;
     std::shared_ptr<facebook::react::CallInvoker> jsCallInvoker_;
     std::map<std::string, std::shared_ptr<facebook::jsi::Function>> callbacks_;
 
     UIEdgeInsets safeAreaInsets;
     CGSize screenSize;
-    BOOL isKeyboardPresent;
 }
 @end
 
@@ -43,7 +56,6 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install) {
     
     screenSize = CGSizeZero;
     safeAreaInsets = UIEdgeInsetsZero;
-    isKeyboardPresent = false;
 
     return @true;
 }
@@ -74,20 +86,29 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install) {
         callbacks_["listenKeyboard"] = std::make_shared<jsi::Function>(std::move(callback));
         
         dispatch_sync(dispatch_get_main_queue(), ^{
+            [NSNotificationCenter.defaultCenter addObserver:self
+                selector:@selector(handleKeyboardWillShowNotification:)
+                name:UIKeyboardWillShowNotification
+                object:nil
+            ];
+            [NSNotificationCenter.defaultCenter addObserver:self
+                selector:@selector(handleKeyboardDidShowNotification:)
+                name:UIKeyboardDidShowNotification
+                object:nil
+            ];
 
-            [[NSNotificationCenter defaultCenter] addObserver:self
-                selector:@selector(keyboardDidShow:)
-                    name:UIKeyboardWillChangeFrameNotification
-                    object:nil];
-            
-            [[NSNotificationCenter defaultCenter] addObserver:self
-             selector:@selector(keyboardDidHide:)
-                 name:UIKeyboardWillHideNotification
-               object:nil];
+            [NSNotificationCenter.defaultCenter addObserver:self
+                selector:@selector(handleKeyboardWillHideNotification:)
+                name:UIKeyboardWillHideNotification
+                object:nil
+            ];
+            [NSNotificationCenter.defaultCenter addObserver:self
+                selector:@selector(handleKeyboardDidHideNotification:)
+                name:UIKeyboardDidHideNotification
+                object:nil
+            ];
         });
-        
-       
-        
+
         return jsi::Value::undefined();
     });
     
@@ -95,22 +116,27 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install) {
         if (!callbacks_["listenKeyboard"]) return jsi::Value::undefined();
         NSLog(@"🥸 stopListenKeyboard");
         callbacks_.erase("listenKeyboard");
-        
-        
-        dispatch_sync(dispatch_get_main_queue(), ^{
 
-            [[NSNotificationCenter defaultCenter]
-             removeObserver:self
-             name:UIKeyboardWillChangeFrameNotification
-             object:nil];
-            
-            [[NSNotificationCenter defaultCenter]
-             removeObserver:self
-             name:UIKeyboardWillHideNotification
-             object:nil];
+        dispatch_sync(dispatch_get_main_queue(), ^{
+            [NSNotificationCenter.defaultCenter removeObserver:self
+                name:UIKeyboardWillShowNotification
+                object:nil
+            ];
+            [NSNotificationCenter.defaultCenter removeObserver:self
+                name:UIKeyboardDidShowNotification
+                object:nil
+            ];
+
+            [NSNotificationCenter.defaultCenter removeObserver:self
+                name:UIKeyboardWillHideNotification
+                object:nil
+            ];
+            [NSNotificationCenter.defaultCenter removeObserver:self
+                name:UIKeyboardDidHideNotification
+                object:nil
+            ];
         });
-    
-        
+
         return jsi::Value::undefined();
     });
 
@@ -121,40 +147,64 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install) {
     runtime_->global().setProperty(*runtime_, "__safeAreaIme", exportModule);
 }
 
+- (void)handleKeyboardWillShowNotification: (NSNotification *) notification {
+    CGRect keyboardFrameRect = [helpers getKeyboardFrame:notification];
 
-- (void)keyboardDidShow: (NSNotification *) notif{
-    
-    NSDictionary* keyboardInfo = [notif userInfo];
-    NSValue* keyboardFrameBegin = [keyboardInfo valueForKey:UIKeyboardFrameEndUserInfoKey];
-    CGRect keyboardFrameBeginRect = [keyboardFrameBegin CGRectValue];
-    if (isKeyboardPresent && keyboardheight == keyboardFrameBeginRect.size.height) {
-        return;
-    }
-    if (keyboardFrameBeginRect.size.height < 100) return;
-    isKeyboardPresent = true;
-    keyboardheight = keyboardFrameBeginRect.size.height;
-    
     jsCallInvoker_->invokeAsync([=]() {
         std::shared_ptr<jsi::Function> c = callbacks_["listenKeyboard"];
         if (!c) return;
-        
+
         jsi::Object object = jsi::Object(*runtime_);
-        object.setProperty(*runtime_, "type", jsi::String::createFromUtf8(*runtime_, "show"));
-        object.setProperty(*runtime_, "height", jsi::Value(keyboardheight));
+
+        object.setProperty(*runtime_, "keyboardHeight", jsi::Value(keyboardFrameRect.size.height));
+        object.setProperty(*runtime_, "keyboardState", jsi::String::createFromUtf8(*runtime_, "OPENING"));
+        object.setProperty(*runtime_, "isKeyboardPresent", jsi::Value(true));
+
+        c->call(*runtime_, std::move(object));
+    });
+}
+- (void)handleKeyboardDidShowNotification: (NSNotification *) notification{
+    CGRect keyboardFrameRect = [helpers getKeyboardFrame:notification];
+
+    jsCallInvoker_->invokeAsync([=]() {
+        std::shared_ptr<jsi::Function> c = callbacks_["listenKeyboard"];
+        if (!c) return;
+
+        jsi::Object object = jsi::Object(*runtime_);
+
+        object.setProperty(*runtime_, "keyboardHeight", jsi::Value(keyboardFrameRect.size.height));
+        object.setProperty(*runtime_, "keyboardState", jsi::String::createFromUtf8(*runtime_, "OPENED"));
+        object.setProperty(*runtime_, "isKeyboardPresent", jsi::Value(true));
+
         c->call(*runtime_, std::move(object));
     });
 }
 
-- (void)keyboardDidHide: (NSNotification *) notif{
-    isKeyboardPresent = false;
+- (void)handleKeyboardWillHideNotification: (NSNotification *) notification {
     jsCallInvoker_->invokeAsync([=]() {
         std::shared_ptr<jsi::Function> c = callbacks_["listenKeyboard"];
         if (!c) return;
-        
+
         jsi::Object object = jsi::Object(*runtime_);
-        object.setProperty(*runtime_, "type", jsi::String::createFromUtf8(*runtime_, "hide"));
-        object.setProperty(*runtime_, "height", jsi::Value(keyboardheight));
-        
+
+        object.setProperty(*runtime_, "keyboardHeight", jsi::Value(0));
+        object.setProperty(*runtime_, "keyboardState", jsi::String::createFromUtf8(*runtime_, "CLOSING"));
+        object.setProperty(*runtime_, "isKeyboardPresent", jsi::Value(true));
+
+        c->call(*runtime_, std::move(object));
+    });
+}
+- (void)handleKeyboardDidHideNotification: (NSNotification *) notification{
+    jsCallInvoker_->invokeAsync([=]() {
+        std::shared_ptr<jsi::Function> c = callbacks_["listenKeyboard"];
+        if (!c) return;
+
+        jsi::Object object = jsi::Object(*runtime_);
+
+        object.setProperty(*runtime_, "keyboardHeight", jsi::Value(0));
+        object.setProperty(*runtime_, "keyboardState", jsi::String::createFromUtf8(*runtime_, "CLOSED"));
+        object.setProperty(*runtime_, "isKeyboardPresent", jsi::Value(false));
+
         c->call(*runtime_, std::move(object));
     });
 }
