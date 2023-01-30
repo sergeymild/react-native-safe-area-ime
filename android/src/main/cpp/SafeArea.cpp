@@ -78,10 +78,13 @@ void SafeArea::installJSIBindings() {
                  std::shared_ptr<jsi::Function> c = (*cc)["listenKeyboard"];
                  if (!c) return;
 
-                 jsi::Object object = jsi::Object(*r);
-                 object.setProperty(*r, "type", jsi::String::createFromUtf8(*r, type));
-                 object.setProperty(*r, "height", jsi::Value(height));
+                 std::string keyboardState = type == "show" ? "OPENED" : "CLOSED";
+                 bool isKeyboardPresent = keyboardState == "OPENED";
 
+                 jsi::Object object = jsi::Object(*r);
+                 object.setProperty(*r, "keyboardHeight", jsi::Value(height));
+                 object.setProperty(*r, "keyboardState", jsi::String::createFromUtf8(*r, keyboardState));
+                 object.setProperty(*r, "isKeyboardPresent", jsi::Value(isKeyboardPresent));
                  c->call(*r, std::move(object));
              });
          };
