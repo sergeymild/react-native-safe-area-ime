@@ -23,7 +23,7 @@ export enum KeyboardState {
   CLOSED = 'CLOSED',
   OPENING = 'OPENING',
   OPENED = 'OPENED',
-  CLOSING = 'CLOSED',
+  CLOSING = 'CLOSING',
 }
 
 export type NativeKeyboardNotificationsListenerParams = {

@@ -10,21 +10,6 @@
 
 using namespace facebook;
 
-@interface Helpers:NSObject
-- (CGRect) getKeyboardFrame:( NSNotification* )notification;
-@end
-
-@implementation Helpers
-- (CGRect) getKeyboardFrame:( NSNotification* )notification {
-    NSDictionary* keyboardUserInfo = notification.userInfo;
-    NSValue* keyboardFrame = [keyboardUserInfo valueForKey: UIKeyboardFrameEndUserInfoKey];
-    CGRect keyboardFrameRect = keyboardFrame.CGRectValue;
-    return keyboardFrameRect;
-}
-@end
-Helpers *helpers = [[Helpers alloc]init];
-
-
 @interface SafeAreaIme : NSObject <RCTBridgeModule> {
     jsi::Runtime* runtime_;
     std::shared_ptr<facebook::react::CallInvoker> jsCallInvoker_;
@@ -147,66 +132,64 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install) {
     runtime_->global().setProperty(*runtime_, "__safeAreaIme", exportModule);
 }
 
-- (void)handleKeyboardWillShowNotification: (NSNotification *) notification {
-    CGRect keyboardFrameRect = [helpers getKeyboardFrame:notification];
+- (CGRect) getKeyboardFrame:( NSNotification* )notification {
+    NSDictionary* keyboardUserInfo = notification.userInfo;
+    NSValue* keyboardFrame = [keyboardUserInfo valueForKey: UIKeyboardFrameEndUserInfoKey];
+    CGRect keyboardFrameRect = keyboardFrame.CGRectValue;
+    return keyboardFrameRect;
+}
 
+- (void) updateExportModuleKeyboardData:( int )keyboardHeight keyboardState:( std::string& ) keyboardState isKeyboardPresent: ( BOOL ) isKeyboardPresent {
     jsCallInvoker_->invokeAsync([=]() {
         std::shared_ptr<jsi::Function> c = callbacks_["listenKeyboard"];
         if (!c) return;
 
         jsi::Object object = jsi::Object(*runtime_);
 
-        object.setProperty(*runtime_, "keyboardHeight", jsi::Value(keyboardFrameRect.size.height));
-        object.setProperty(*runtime_, "keyboardState", jsi::String::createFromUtf8(*runtime_, "OPENING"));
-        object.setProperty(*runtime_, "isKeyboardPresent", jsi::Value(true));
+        object.setProperty(*runtime_, "keyboardHeight", jsi::Value(keyboardHeight));
+        object.setProperty(*runtime_, "keyboardState", jsi::String::createFromUtf8(*runtime_, keyboardState));
+        object.setProperty(*runtime_, "isKeyboardPresent", jsi::Value(isKeyboardPresent));
 
         c->call(*runtime_, std::move(object));
     });
 }
+
+- (void)handleKeyboardWillShowNotification: (NSNotification *) notification {
+    CGRect keyboardFrameRect = [self getKeyboardFrame:notification];
+
+    std::string keyboardState = "OPENING";
+
+    [self updateExportModuleKeyboardData: keyboardFrameRect.size.height
+        keyboardState: keyboardState
+        isKeyboardPresent: true
+    ];
+}
 - (void)handleKeyboardDidShowNotification: (NSNotification *) notification{
-    CGRect keyboardFrameRect = [helpers getKeyboardFrame:notification];
+    CGRect keyboardFrameRect = [self getKeyboardFrame:notification];
 
-    jsCallInvoker_->invokeAsync([=]() {
-        std::shared_ptr<jsi::Function> c = callbacks_["listenKeyboard"];
-        if (!c) return;
+    std::string keyboardState = "OPENED";
 
-        jsi::Object object = jsi::Object(*runtime_);
-
-        object.setProperty(*runtime_, "keyboardHeight", jsi::Value(keyboardFrameRect.size.height));
-        object.setProperty(*runtime_, "keyboardState", jsi::String::createFromUtf8(*runtime_, "OPENED"));
-        object.setProperty(*runtime_, "isKeyboardPresent", jsi::Value(true));
-
-        c->call(*runtime_, std::move(object));
-    });
+    [self updateExportModuleKeyboardData: keyboardFrameRect.size.height
+        keyboardState: keyboardState
+        isKeyboardPresent: true
+    ];
 }
 
 - (void)handleKeyboardWillHideNotification: (NSNotification *) notification {
-    jsCallInvoker_->invokeAsync([=]() {
-        std::shared_ptr<jsi::Function> c = callbacks_["listenKeyboard"];
-        if (!c) return;
+    std::string keyboardState = "CLOSING";
 
-        jsi::Object object = jsi::Object(*runtime_);
-
-        object.setProperty(*runtime_, "keyboardHeight", jsi::Value(0));
-        object.setProperty(*runtime_, "keyboardState", jsi::String::createFromUtf8(*runtime_, "CLOSING"));
-        object.setProperty(*runtime_, "isKeyboardPresent", jsi::Value(true));
-
-        c->call(*runtime_, std::move(object));
-    });
+    [self updateExportModuleKeyboardData: 0
+        keyboardState: keyboardState
+        isKeyboardPresent: true
+    ];
 }
 - (void)handleKeyboardDidHideNotification: (NSNotification *) notification{
-    jsCallInvoker_->invokeAsync([=]() {
-        std::shared_ptr<jsi::Function> c = callbacks_["listenKeyboard"];
-        if (!c) return;
+    std::string keyboardState = "CLOSED";
 
-        jsi::Object object = jsi::Object(*runtime_);
-
-        object.setProperty(*runtime_, "keyboardHeight", jsi::Value(0));
-        object.setProperty(*runtime_, "keyboardState", jsi::String::createFromUtf8(*runtime_, "CLOSED"));
-        object.setProperty(*runtime_, "isKeyboardPresent", jsi::Value(false));
-
-        c->call(*runtime_, std::move(object));
-    });
+    [self updateExportModuleKeyboardData: 0
+        keyboardState: keyboardState
+        isKeyboardPresent: false
+    ];
 }
 
 @end
