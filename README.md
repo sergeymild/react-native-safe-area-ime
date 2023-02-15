@@ -4,7 +4,7 @@
 
 add in package.json
 ```sh
-"react-native-safe-area-ime": "sergeymild/react-native-safe-area-ime#0.8.0"
+"react-native-safe-area-ime": "sergeymild/react-native-safe-area-ime#0.71.0"
 ```
 
 ## Usage
