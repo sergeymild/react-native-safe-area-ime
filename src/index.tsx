@@ -29,15 +29,17 @@ export enum KeyboardState {
 export type NativeKeyboardNotificationsListenerParams = {
   keyboardHeight: number;
   keyboardState: KeyboardState;
-  isKeyboardPresent: boolean
-}
-export type NativeKeyboardNotificationsListener =
-  (params: NativeKeyboardNotificationsListenerParams) => void
+  isKeyboardPresent: boolean;
+};
+export type NativeKeyboardNotificationsListener = (
+  params: NativeKeyboardNotificationsListenerParams
+) => void;
 
 declare global {
   var __safeAreaIme: {
     safeArea(): SafeAreaModel;
     listenKeyboard(callback: NativeKeyboardNotificationsListener): void;
+    closeKeyboard(callback: NativeKeyboardNotificationsListener): void;
     stopListenKeyboard(): void;
     toggleFitsSystemWindows(isDisabled: boolean): void;
   };
@@ -59,6 +61,10 @@ export const layout = {
 
   listenKeyboard(callback: NativeKeyboardNotificationsListener) {
     global.__safeAreaIme.listenKeyboard(callback);
+  },
+
+  closeKeyboard(callback: NativeKeyboardNotificationsListener) {
+    global.__safeAreaIme.closeKeyboard(callback);
   },
 
   stopListenKeyboard() {

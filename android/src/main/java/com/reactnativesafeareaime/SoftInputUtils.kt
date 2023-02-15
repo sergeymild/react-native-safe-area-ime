@@ -39,40 +39,17 @@ fun Activity.hideSoftInput() {
     }
 }
 
-/** 隐藏软键盘 */
-fun Fragment.hideSoftInput() = requireActivity().hideSoftInput()
 
-/** 隐藏软键盘 */
-fun EditText.hideSoftInput() {
-    ViewCompat.getWindowInsetsController(this)?.hide(WindowInsetsCompat.Type.ime())
-}
-//</editor-fold>
-
-
-//<editor-fold desc="软键盘属性">
-
-/** 软键盘是否显示 */
 fun Activity.hasSoftInput(): Boolean {
     return ViewCompat.getRootWindowInsets(window.decorView)?.isVisible(WindowInsetsCompat.Type.ime()) ?: false
 }
 
-/** 软键盘是否显示 */
-fun Fragment.hasSoftInput(): Boolean {
-    return requireActivity().hasSoftInput()
-}
-
-/** 当前软键盘显示高度 */
 fun Activity.getSoftInputHeight(): Int {
     val navBars = ViewCompat.getRootWindowInsets(window.decorView)?.getInsets(WindowInsetsCompat.Type.navigationBars())?.bottom ?: 0
     val softInputHeight = ViewCompat.getRootWindowInsets(window.decorView)?.getInsets(WindowInsetsCompat.Type.ime())?.bottom
     return ((softInputHeight) ?: 0) - navBars
 }
 
-fun Activity.statusBarHeight(): Int {
-    return ViewCompat.getRootWindowInsets(window.decorView)?.getInsets(WindowInsetsCompat.Type.statusBars())?.top ?: 0
-}
-
-/** 当前软键盘显示高度 */
 fun Fragment.getSoftInputHeight(): Int {
     return requireActivity().getSoftInputHeight()
 }

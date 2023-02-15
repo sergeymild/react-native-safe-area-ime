@@ -30,143 +30,163 @@ import kotlin.math.min
  */
 @JvmOverloads
 fun Activity.setWindowSoftInput(
-    float: View? = null,
-    transition: View? = float?.parent as? View,
-    editText: View? = null,
-    margin: Int = 0,
-    setPadding: Boolean = false,
-    onChanged: (() -> Unit)? = null,
+  float: View? = null,
+  transition: View? = float?.parent as? View,
+  editText: View? = null,
+  margin: Int = 0,
+  setPadding: Boolean = false,
+  onChanged: (() -> Unit)? = null,
 ) = window.setWindowSoftInput(float, transition, editText, margin, setPadding, onChanged)
 
 fun Activity.removeWindowSoftInput() {
-  if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return
   window.removeWindowSoftInput()
 }
 
 fun Window.removeWindowSoftInput() {
-  if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return
   ViewCompat.setWindowInsetsAnimationCallback(decorView, null)
 }
 
 @JvmOverloads
 fun Window.setWindowSoftInput(
-    float: View? = null,
-    transition: View? = null,
-    editText: View? = null,
-    margin: Int = 0,
-    setPadding: Boolean = false,
-    onChanged: (() -> Unit)? = null,
+  float: View? = null,
+  transition: View? = null,
+  editText: View? = null,
+  margin: Int = 0,
+  setPadding: Boolean = false,
+  onChanged: (() -> Unit)? = null,
 ) {
-    // Api21下不需要用户体验, 直接不适配
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return
-    // 部分系统不支持WindowInsets使用兼容方案处理
-//    if (!decorView.isSystemInsetsAnimationSupport()) {
-//        return setWindowSoftInputCompatible(float, transition, editText, margin, onChanged)
-//    }
-    setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING)
-    var matchEditText = false
-    var hasSoftInput = false
-    var floatInitialBottom = 0
-    var startAnimation: WindowInsetsAnimationCompat? = null
-    var transitionY = 0f
-    val callback = object : WindowInsetsAnimationCompat.Callback(DISPATCH_MODE_CONTINUE_ON_SUBTREE) {
+  setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING)
+  var matchEditText = false
+  var hasSoftInput = false
+  var floatInitialBottom = 0
+  var startAnimation: WindowInsetsAnimationCompat? = null
+  var transitionY = 0f
+  val callback = object : WindowInsetsAnimationCompat.Callback(DISPATCH_MODE_CONTINUE_ON_SUBTREE) {
 
-        override fun onStart(
-            animation: WindowInsetsAnimationCompat,
-            bounds: WindowInsetsAnimationCompat.BoundsCompat
-        ): WindowInsetsAnimationCompat.BoundsCompat {
-            if (float == null || transition == null) return bounds
-            hasSoftInput = ViewCompat.getRootWindowInsets(decorView)?.isVisible(WindowInsetsCompat.Type.ime()) ?: false
-            startAnimation = animation
-            if (hasSoftInput) matchEditText = editText == null || editText.hasFocus()
-            if (hasSoftInput) {
-                floatInitialBottom = run {
-                    val r = IntArray(2)
-                    float.getLocationInWindow(r)
-                    r[1] + float.height
-                }
-            }
-            return bounds
+    override fun onStart(
+      animation: WindowInsetsAnimationCompat,
+      bounds: WindowInsetsAnimationCompat.BoundsCompat
+    ): WindowInsetsAnimationCompat.BoundsCompat {
+      if (float == null || transition == null) return bounds
+      hasSoftInput =
+        ViewCompat.getRootWindowInsets(decorView)?.isVisible(WindowInsetsCompat.Type.ime()) ?: false
+      startAnimation = animation
+      if (hasSoftInput) matchEditText = editText == null || editText.hasFocus()
+      if (hasSoftInput) {
+        floatInitialBottom = run {
+          val r = IntArray(2)
+          float.getLocationInWindow(r)
+          r[1] + float.height
         }
-
-        override fun onEnd(animation: WindowInsetsAnimationCompat) {
-            super.onEnd(animation)
-//            if (matchEditText) onChanged?.invoke()
-            onChanged?.invoke()
-        }
-
-        override fun onProgress(
-            insets: WindowInsetsCompat,
-            runningAnimations: MutableList<WindowInsetsAnimationCompat>
-        ): WindowInsetsCompat {
-            val fraction = startAnimation?.fraction
-            if (fraction == null || float == null || transition == null || !matchEditText) return insets
-            val softInputHeight = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
-            val softInputTop = decorView.bottom - softInputHeight
-            if (hasSoftInput && softInputTop < floatInitialBottom) {
-                val offset = (softInputTop - floatInitialBottom - margin).toFloat()
-                if (setPadding) {
-                    transition.setPadding(0, 0, 0, -offset.toInt())
-                    transitionY = -offset
-                } else {
-                    transition.translationY = offset
-                    transitionY = offset
-                }
-            } else if (!hasSoftInput) {
-                if (setPadding) {
-                    transition.setPadding(0, 0, 0, max((transitionY - transitionY * (fraction + 0.5f)), 0f).toInt())
-                } else {
-                    transition.translationY = min(transitionY - transitionY * (fraction + 0.5f), 0f)
-                }
-            }
-            return insets
-        }
+      }
+      return bounds
     }
-    ViewCompat.setWindowInsetsAnimationCallback(decorView, callback)
+
+    override fun onEnd(animation: WindowInsetsAnimationCompat) {
+      super.onEnd(animation)
+      onChanged?.invoke()
+    }
+
+    override fun onProgress(
+      insets: WindowInsetsCompat,
+      runningAnimations: MutableList<WindowInsetsAnimationCompat>
+    ): WindowInsetsCompat {
+      val fraction = startAnimation?.fraction
+      if (fraction == null || float == null || transition == null || !matchEditText) return insets
+      val softInputHeight = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
+      val softInputTop = decorView.bottom - softInputHeight
+      if (hasSoftInput && softInputTop < floatInitialBottom) {
+        val offset = (softInputTop - floatInitialBottom - margin).toFloat()
+        if (setPadding) {
+          transition.setPadding(0, 0, 0, -offset.toInt())
+          transitionY = -offset
+        } else {
+          transition.translationY = offset
+          transitionY = offset
+        }
+      } else if (!hasSoftInput) {
+        if (setPadding) {
+          transition.setPadding(
+            0,
+            0,
+            0,
+            max((transitionY - transitionY * (fraction + 0.5f)), 0f).toInt()
+          )
+        } else {
+          transition.translationY = min(transitionY - transitionY * (fraction + 0.5f), 0f)
+        }
+      }
+      return insets
+    }
+  }
+  ViewCompat.setWindowInsetsAnimationCallback(decorView, callback)
 }
 
-/** 部分系统不支持WindowInsets使用兼容方案处理 */
-private fun Window.setWindowSoftInputCompatible(
-    float: View? = null,
-    transition: View? = float?.parent as? View,
-    editText: View? = null,
-    margin: Int = 0,
-    onChanged: (() -> Unit)? = null,
+fun Window.closeKeyboard(
+  completion: (() -> Unit)? = null,
 ) {
-    setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
-    var shown = false
-    var matchEditText = false
-    decorView.viewTreeObserver.addOnGlobalLayoutListener {
-        val canTransition = float != null && transition != null
-        val floatBottom = if (canTransition) {
-            val r = IntArray(2)
-            float!!.getLocationInWindow(r)
-            r[1] + float.height
-        } else 0
-        val decorBottom = decorView.bottom
-        val rootWindowInsets = ViewCompat.getRootWindowInsets(decorView) ?: return@addOnGlobalLayoutListener
-        val softInputHeight = rootWindowInsets.getInsets(WindowInsetsCompat.Type.ime()).bottom
-        val hasSoftInput = rootWindowInsets.isVisible(WindowInsetsCompat.Type.ime())
-        val offset = (decorBottom - floatBottom - softInputHeight - margin).toFloat()
-        if (hasSoftInput) {
-            matchEditText = editText == null || editText.hasFocus()
-            if (!shown && matchEditText) {
-                transition?.translationY = offset
-                onChanged?.invoke()
-            }
-            shown = true
-        } else {
-            if (shown && matchEditText) {
-                transition?.translationY = 0f
-                onChanged?.invoke()
-            }
-            shown = false
-        }
+  setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING)
+
+  var startAnimation: WindowInsetsAnimationCompat? = null
+  val callback = object : WindowInsetsAnimationCompat.Callback(DISPATCH_MODE_CONTINUE_ON_SUBTREE) {
+    override fun onProgress(
+      insets: WindowInsetsCompat,
+      runningAnimations: MutableList<WindowInsetsAnimationCompat>
+    ): WindowInsetsCompat {
+      return insets
     }
+
+    override fun onEnd(animation: WindowInsetsAnimationCompat) {
+      super.onEnd(animation)
+      completion?.invoke()
+      ViewCompat.setWindowInsetsAnimationCallback(decorView, null)
+    }
+  }
+  ViewCompat.setWindowInsetsAnimationCallback(decorView, callback)
+}
+
+private fun Window.setWindowSoftInputCompatible(
+  float: View? = null,
+  transition: View? = float?.parent as? View,
+  editText: View? = null,
+  margin: Int = 0,
+  onChanged: (() -> Unit)? = null,
+) {
+  setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+  var shown = false
+  var matchEditText = false
+  decorView.viewTreeObserver.addOnGlobalLayoutListener {
+    val canTransition = float != null && transition != null
+    val floatBottom = if (canTransition) {
+      val r = IntArray(2)
+      float!!.getLocationInWindow(r)
+      r[1] + float.height
+    } else 0
+    val decorBottom = decorView.bottom
+    val rootWindowInsets =
+      ViewCompat.getRootWindowInsets(decorView) ?: return@addOnGlobalLayoutListener
+    val softInputHeight = rootWindowInsets.getInsets(WindowInsetsCompat.Type.ime()).bottom
+    val hasSoftInput = rootWindowInsets.isVisible(WindowInsetsCompat.Type.ime())
+    val offset = (decorBottom - floatBottom - softInputHeight - margin).toFloat()
+    if (hasSoftInput) {
+      matchEditText = editText == null || editText.hasFocus()
+      if (!shown && matchEditText) {
+        transition?.translationY = offset
+        onChanged?.invoke()
+      }
+      shown = true
+    } else {
+      if (shown && matchEditText) {
+        transition?.translationY = 0f
+        onChanged?.invoke()
+      }
+      shown = false
+    }
+  }
 }
 
 /** 判断系统是否支持[WindowInsetsAnimationCompat] */
 internal fun View.isSystemInsetsAnimationSupport(): Boolean {
-    val windowInsetsController = ViewCompat.getWindowInsetsController(this)
-    return !(windowInsetsController == null || windowInsetsController.systemBarsBehavior == 0)
+  val windowInsetsController = ViewCompat.getWindowInsetsController(this)
+  return !(windowInsetsController == null || windowInsetsController.systemBarsBehavior == 0)
 }

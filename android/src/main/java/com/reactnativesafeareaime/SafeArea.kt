@@ -82,11 +82,12 @@ class SafeArea(var context: ReactApplicationContext) {
   }
 
   var callback: KeyboardListenerCallback? = null
+  var closeKeyboardCallback: KeyboardListenerCallback? = null
 
   @ReactMethod
   fun stopListenKeyboard() {
     println("🥸 stopListenKeyboard")
-    context.currentActivity?.removeWindowSoftInput()
+    context.currentActivity?.window?.removeWindowSoftInput()
     callback?.destroy()
     callback = null
   }
@@ -106,7 +107,31 @@ class SafeArea(var context: ReactApplicationContext) {
         }
         val type = if (currentActivity.hasSoftInput()) "show" else "hide"
         callback?.onChange(type, keyboardHeight)
+        if (type == "hide" && closeKeyboardCallback != null) {
+          closeKeyboardCallback?.onChange(type, 0.0)
+          closeKeyboardCallback = null
+        }
       }
+    }
+  }
+
+  @ReactMethod
+  fun closeKeyboard(c: KeyboardListenerCallback) {
+    val currentActivity = context.currentActivity ?: return
+    if (!currentActivity.hasSoftInput()) {
+      c.onChange("hide", 0.0)
+      return
+    }
+    if (callback != null) {
+      closeKeyboardCallback = c
+      currentActivity.hideSoftInput()
+      return
+    }
+    currentActivity.runOnUiThread {
+      currentActivity.window.closeKeyboard {
+        c.onChange("hide", 0.0)
+      }
+      currentActivity.hideSoftInput()
     }
   }
 }

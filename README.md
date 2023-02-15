@@ -4,13 +4,13 @@
 
 add in package.json
 ```sh
-"react-native-safe-area-ime": "sergeymild/react-native-safe-area-ime#0.71.0"
+"react-native-safe-area-ime": "sergeymild/react-native-safe-area-ime#0.71.1"
 ```
 
 ## Usage
 
 ```js
-import { safeArea } from 'react-native-safe-area-ime';
+import { layout } from 'react-native-safe-area-ime';
 
 // ...
 
@@ -34,6 +34,11 @@ export const layout = {
 
   stopListenKeyboard() {
     global.__safeAreaIme.stopListenKeyboard();
+  },
+
+  // close and invoke callback after keyboard dismiss
+  closeKeyboard(callback: (params: { type: string; height: number } => void) {
+    global.__safeAreaIme.closeKeyboard();
   },
 
   toggleFitsSystemWindows(isDisabled: boolean) {

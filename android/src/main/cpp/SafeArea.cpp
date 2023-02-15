@@ -23,6 +23,7 @@ using namespace facebook::jsi;
 
 
 using TSelf = local_ref<HybridClass<SafeArea>::jhybriddata>;
+using JCallback = std::function<void(std::string, double)>;
 using Callbacks = std::map<std::string, std::shared_ptr<facebook::jsi::Function>>;
 
 // JNI binding
@@ -69,7 +70,7 @@ void SafeArea::installJSIBindings() {
          __android_log_print(ANDROID_LOG_ERROR, "SafeArea", "🥸 listenKeyboard.method");
 
 
-         std::function<void(std::string, double)> wrapperOnChange =
+         JCallback wrapperOnChange =
                  [j = jsCallInvoker_, cc = &callbacks_, r = runtime_](const std::string& type, double height) {
              __android_log_print(ANDROID_LOG_ERROR, "SafeArea", "🥸 listenKeyboardIII %s %f", type.c_str(), height);
 
@@ -103,6 +104,28 @@ void SafeArea::installJSIBindings() {
          return jsi::Value::undefined();
      });
 
+    auto closeKeyboard = JSI_HOST_FUNCTION("closeKeyboard", 1) {
+         auto callback =  std::make_shared<jsi::Function>(args[0].asObject(runtime).asFunction(runtime));
+         JCallback wrapperOnChange =
+                 [j = jsCallInvoker_, cc = callback, r = runtime_](const std::string& type, double height) {
+             j->invokeAsync([&cc, r, type]() {
+                 const std::shared_ptr<jsi::Function>& invoke = cc;
+                 if (!invoke) return;
+                 jsi::Object object = jsi::Object(*r);
+                 object.setProperty(*r, "keyboardHeight", jsi::Value(0));
+                 object.setProperty(*r, "keyboardState", jsi::String::createFromUtf8(*r, "hide"));
+                 object.setProperty(*r, "isKeyboardPresent", jsi::Value(false));
+                 invoke->call(*r, std::move(object));
+             });
+         };
+
+         auto obj = KeyboardListenerCallback::newObjectCxxArgs(std::move(wrapperOnChange));
+         auto method =
+                 javaPart_->getClass()->getMethod<void(KeyboardListenerCallback::javaobject)>("closeKeyboard");
+         method(javaPart_.get(), obj.get());
+         return jsi::Value::undefined();
+     });
+
     auto stopListenKeyboard = JSI_HOST_FUNCTION("stopListenKeyboard", 0) {
          if (!callbacks_["listenKeyboard"]) return jsi::Value::undefined();
          callbacks_.erase("listenKeyboard");
@@ -117,6 +140,7 @@ void SafeArea::installJSIBindings() {
     exportModule.setProperty(*runtime_, "toggleFitsSystemWindows", std::move(toggleFitsSystemWindows));
     exportModule.setProperty(*runtime_, "listenKeyboard", std::move(listenKeyboard));
     exportModule.setProperty(*runtime_, "stopListenKeyboard", std::move(stopListenKeyboard));
+    exportModule.setProperty(*runtime_, "closeKeyboard", std::move(closeKeyboard));
     runtime_->global().setProperty(*runtime_, "__safeAreaIme", exportModule);
 }
 
