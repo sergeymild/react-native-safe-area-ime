@@ -1,18 +1,23 @@
 package com.reactnativesafeareaime
 import android.content.res.Resources
+import android.os.Build
+import android.util.DisplayMetrics
 import android.view.View
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
-import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.jni.HybridData
 import com.facebook.proguard.annotations.DoNotStrip
+import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.turbomodule.core.CallInvokerHolderImpl
 import com.facebook.react.uimanager.PixelUtil
-import java.lang.Exception
-import java.lang.ref.WeakReference
 import kotlin.math.abs
+
+
+fun Int.toDp(): Double {
+  return PixelUtil.toDIPFromPixel(this.toFloat()).toDouble()
+}
 
 class SafeArea(var context: ReactApplicationContext) {
   @DoNotStrip
@@ -61,16 +66,18 @@ class SafeArea(var context: ReactApplicationContext) {
     val systemHeight = viewById.height - heightPixels
     val rootWindowInsets = ViewCompat.getRootWindowInsets(viewById)
       ?: return DoubleArray(6)
-    val top = rootWindowInsets.getInsets(WindowInsetsCompat.Type.statusBars()).top
-    val t = PixelUtil.toDIPFromPixel(top.toFloat()).toDouble()
-    val sh = PixelUtil.toDIPFromPixel(abs(systemHeight).toFloat()).toDouble()
+    val statusBarTop = rootWindowInsets.getInsets(WindowInsetsCompat.Type.statusBars()).top
+    val navBottom = rootWindowInsets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
+    val bottom = navBottom.toDp()
+    //top right bottom left width height
     return doubleArrayOf(
-      if (abs(systemHeight) == 0) t else 0.0,
+      if (abs(systemHeight) == 0) statusBarTop.toDp() else 0.0,
       0.0,
-      if (abs(systemHeight) == top) 0.0 else sh,
+      // if system height is equal status bar top or zero means that navigation bar height is zero
+      if (statusBarTop == abs(systemHeight) || abs(systemHeight) == 0) 0.0 else bottom,
       0.0,
-      PixelUtil.toDIPFromPixel(viewById.width.toFloat()).toDouble(),
-      PixelUtil.toDIPFromPixel(viewById.height.toFloat()).toDouble()
+      viewById.width.toDp(),
+      viewById.height.toDp()
     )
   }
 
