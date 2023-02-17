@@ -126,8 +126,6 @@ fun Window.closeKeyboard(
   completion: (() -> Unit)? = null,
 ) {
   setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING)
-
-  var startAnimation: WindowInsetsAnimationCompat? = null
   val callback = object : WindowInsetsAnimationCompat.Callback(DISPATCH_MODE_CONTINUE_ON_SUBTREE) {
     override fun onProgress(
       insets: WindowInsetsCompat,
@@ -140,6 +138,7 @@ fun Window.closeKeyboard(
       super.onEnd(animation)
       completion?.invoke()
       ViewCompat.setWindowInsetsAnimationCallback(decorView, null)
+      setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
     }
   }
   ViewCompat.setWindowInsetsAnimationCallback(decorView, callback)
