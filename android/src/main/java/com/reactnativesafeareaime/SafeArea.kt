@@ -68,13 +68,14 @@ class SafeArea(var context: ReactApplicationContext) {
       ?: return DoubleArray(6)
     val statusBarTop = rootWindowInsets.getInsets(WindowInsetsCompat.Type.statusBars()).top
     val navBottom = rootWindowInsets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
+    val imeHeight = rootWindowInsets.getInsets(WindowInsetsCompat.Type.ime()).bottom
     val bottom = navBottom.toDp()
     //top right bottom left width height
     return doubleArrayOf(
       if (abs(systemHeight) == 0) statusBarTop.toDp() else 0.0,
       0.0,
       // if system height is equal status bar top or zero means that navigation bar height is zero
-      if (statusBarTop == abs(systemHeight) || abs(systemHeight) == 0) 0.0 else bottom,
+      if (statusBarTop == abs(systemHeight) || abs(systemHeight) == 0 || imeHeight > 0) 0.0 else bottom,
       0.0,
       viewById.width.toDp(),
       viewById.height.toDp()
