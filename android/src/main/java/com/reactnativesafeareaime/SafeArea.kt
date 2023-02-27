@@ -102,10 +102,7 @@ class SafeArea(var context: ReactApplicationContext) {
       currentActivity.removeWindowSoftInput()
       var keyboardHeight = 0.0
       currentActivity.setWindowSoftInput {
-        if (keyboardHeight == 0.0) {
-          keyboardHeight =
-            PixelUtil.toDIPFromPixel(currentActivity.getSoftInputHeight().toFloat()).toDouble()
-        }
+        keyboardHeight = PixelUtil.toDIPFromPixel(currentActivity.getSoftInputHeight().toFloat()).toDouble()
         val type = if (currentActivity.hasSoftInput()) "show" else "hide"
         callback?.onChange(type, keyboardHeight)
         if (type == "hide" && closeKeyboardCallback != null) {
