@@ -74,6 +74,14 @@ class SafeArea(var context: ReactApplicationContext) {
     )
   }
 
+  @DoNotStrip
+  fun keyboardState(): DoubleArray {
+    val currentActivity = context.currentActivity ?: return doubleArrayOf(-1.0, -1.0)
+    val keyboardHeight = PixelUtil.toDIPFromPixel(currentActivity.getSoftInputHeight().toFloat()).toDouble()
+    val type = if (currentActivity.hasSoftInput()) 1.0 else 0.0
+    return doubleArrayOf(type, keyboardHeight)
+  }
+
   var callback: KeyboardListenerCallback? = null
 
   @ReactMethod

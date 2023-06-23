@@ -52,6 +52,19 @@ void SafeArea::installJSIBindings() {
          return safeArea;
      });
 
+    auto keyboardState = JSI_HOST_FUNCTION("keyboardState", 0) {
+         auto keyboardState = jsi::Object(runtime);
+
+         auto method = javaPart_->getClass()->getMethod<jni::JArrayDouble()>("keyboardState");
+         auto jarray1 = method(javaPart_.get());
+         auto a = jarray1->pin();
+         std::string keyboardStateStr = ((double)a[0]) == 1.0 ? "OPENED" : "CLOSED";
+         keyboardState.setProperty(runtime, "state", jsi::String::createFromUtf8(runtime, keyboardStateStr));
+         keyboardState.setProperty(runtime, "height", jsi::Value((double)a[1]));
+
+         return keyboardState;
+     });
+
     auto toggleFitsSystemWindows = JSI_HOST_FUNCTION("toggleFitsSystemWindows", 1) {
          auto method = javaPart_->getClass()->getMethod<void(bool )>("toggleFitsSystemWindows");
          auto isDisabled = args[0].getBool();
@@ -117,6 +130,7 @@ void SafeArea::installJSIBindings() {
     exportModule.setProperty(*runtime_, "toggleFitsSystemWindows", std::move(toggleFitsSystemWindows));
     exportModule.setProperty(*runtime_, "listenKeyboard", std::move(listenKeyboard));
     exportModule.setProperty(*runtime_, "stopListenKeyboard", std::move(stopListenKeyboard));
+    exportModule.setProperty(*runtime_, "keyboardState", std::move(keyboardState));
     runtime_->global().setProperty(*runtime_, "__safeAreaIme", exportModule);
 }
 

@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useState } from 'react';
 
 import {
   Dimensions,
@@ -10,20 +11,21 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { safeArea } from 'react-native-safe-area-ime';
-import { useState } from 'react';
+import { KeyboardState, layout } from 'react-native-safe-area-ime';
+import { KeyboardSpacer } from './KeyboardSpacer';
 
 let fitted = true;
 
 export default function App() {
-  const [b, sB] = useState(0);
-  const [t, sT] = useState(0);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  console.log('[App.App]', keyboardHeight);
 
   return (
     <ScrollView
       keyboardDismissMode={'interactive'}
       style={{ flex: 1 }}
-      contentContainerStyle={{ flex: 1, backgroundColor: 'red' }}
+      contentContainerStyle={{ flex: 1, backgroundColor: 'white' }}
     >
       <View style={styles.container}>
         <TouchableOpacity
@@ -34,7 +36,7 @@ export default function App() {
             console.log(
               JSON.stringify(
                 {
-                  native: safeArea.safeArea,
+                  native: layout.safeArea,
                   window,
                   screen,
                   wP: { h: window.height - StatusBar.currentHeight! },
@@ -45,11 +47,9 @@ export default function App() {
                 2
               )
             );
-            sB(safeArea.safeArea.height - 10 - safeArea.safeArea.bottom);
-            sT(safeArea.safeArea.top);
           }}
         >
-          <Text>Get</Text>
+          <Text style={{ color: 'black' }}>Get</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={{ height: 56 }}
@@ -59,51 +59,67 @@ export default function App() {
               fitted ? 'yellow' : 'transparent',
               false
             );
-            safeArea.toggleFitsSystemWindows(fitted);
+            layout.toggleFitsSystemWindows(fitted);
           }}
         >
-          <Text>Nav color</Text>
+          <Text style={{ color: 'black' }}>Nav color</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={{ height: 56 }}
           onPress={() => {
-            safeArea.listenKeyboard((params) => {
+            layout.listenKeyboard((params) => {
+              setKeyboardHeight(
+                params.keyboardState === KeyboardState.CLOSED
+                  ? 0
+                  : params.keyboardHeight
+              );
               console.log('[🥸App.keyboardWillShow]', params);
             });
           }}
         >
-          <Text>Listen</Text>
+          <Text style={{ color: 'black' }}>Listen</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={{ height: 56 }}
           onPress={() => {
-            safeArea.stopListenKeyboard();
+            layout.stopListenKeyboard();
           }}
         >
-          <Text>Stop</Text>
+          <Text style={{ color: 'black' }}>Stop</Text>
         </TouchableOpacity>
-        <TextInput placeholder={'tap'} />
-        <View
-          style={{
-            height: 10,
-            backgroundColor: 'yellow',
-            width: 100,
-            position: 'absolute',
-            top: b,
-          }}
-        />
 
-        <View
-          style={{
-            height: 10,
-            backgroundColor: 'green',
-            width: 100,
-            position: 'absolute',
-            top: t,
+        <TouchableOpacity
+          style={{ height: 56 }}
+          onPress={() => {
+            console.log('[App.]', layout.keyboardState());
           }}
+        >
+          <Text style={{ color: 'black' }}>State</Text>
+        </TouchableOpacity>
+        <View style={{ flex: 1 }} />
+        <TextInput
+          style={{
+            color: 'black',
+            height: 56,
+            backgroundColor: 'yellow',
+            width: '100%',
+          }}
+          placeholderTextColor={'black'}
+          placeholder={'tap'}
         />
+        <KeyboardSpacer handleAndroid />
+
+        {/*<View*/}
+        {/*  style={{*/}
+        {/*    height: 10,*/}
+        {/*    backgroundColor: 'green',*/}
+        {/*    width: 100,*/}
+        {/*    position: 'absolute',*/}
+        {/*    top: t,*/}
+        {/*  }}*/}
+        {/*/>*/}
       </View>
     </ScrollView>
   );
